@@ -3,9 +3,9 @@ package com.example.starbucks.controller;
 // 필요한 클래스들을 임포트합니다.
 
 import com.example.starbucks.dto.ApiResponse;
-import com.example.starbucks.model.UserCustom;
-import com.example.starbucks.service.UserDetailServiceImpl;
-import com.example.starbucks.service.UserService;
+import com.example.starbucks.model.MemberCustom;
+import com.example.starbucks.service.MemberDetailServiceImpl;
+import com.example.starbucks.service.MemberService;
 import com.example.starbucks.status.Status;
 import com.example.starbucks.token.JwtUtil;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,77 +18,72 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
-// 이 클래스가 컨트롤러임을 나타냅니다.
-@Controller
-public class UserController {
+@RestController
+//이 컨트롤러의 모든 엔드포인트는 "/api" 경로로 시작함
+@RequestMapping("")
 
-    // UserService 빈을 자동 주입합니다.
+public class MemberController {
+
     @Autowired
-    private UserService userService;
+    private MemberService memberService;
 
-    // UserDetailServiceImpl 빈을 자동 주입합니다.
     @Autowired
-    private UserDetailServiceImpl userDetailService;
+    private MemberDetailServiceImpl userDetailService;
 
-    // PasswordEncoder 빈을 자동 주입합니다.
     @Autowired
     private PasswordEncoder passwordEncoder;
 
-    // '/registry' POST 요청을 처리하는 메서드입니다.
-    @PostMapping("/registry")
-    public ResponseEntity<ApiResponse<String>> registerUser(@RequestBody UserCustom userCustom) {
-        // 비밀번호를 암호화합니다.
-        userCustom.setPassword(passwordEncoder.encode(userCustom.getPassword()));
+    @PostMapping("api/signup")
 
-        // 사용자 정보를 저장합니다.
-        userService.saveUser(userCustom);
+    public ResponseEntity<ApiResponse<String>> registerUser(@RequestBody MemberCustom memberCustom) {
+        //@RequestBody는 HTTP요청 본문의 json 데이터를 MemberCustom 객체로 반환한다.
 
-        // 성공 응답을 생성합니다.
+        memberCustom.setMemberPwd(passwordEncoder.encode(memberCustom.getMemberPwd()));
+        //사용자가 입력한 비밀번호를 가져와서 passwordEncoder 를 사용해서 암호화한다.
+
+        memberService.saveMember(memberCustom);
+        //암호화된 비밀번호를 다시 memberCustom 객체에 설정한다.
+
         ApiResponse<String> apiResponse = new ApiResponse<>(Status.SUCCESS, "성공", null);
+        //ApiResponse 객체를 생성한다.
+        //상태는 SUCCESS, 상태는 SUCCESS, 메세지는 "성공" 데이터는 Null 이다.
         return ResponseEntity.ok(apiResponse);
     }
 
-    // '/login' POST 요청을 처리하는 메서드입니다.
     @PostMapping("/login")
-    public ResponseEntity<ApiResponse<String>> login(@RequestBody UserCustom userCustom) {
-        try {
-            // 사용자 정보를 로드합니다.
-            UserDetails userDetails = userDetailService.loadUserByUsername(userCustom.getUserId());
 
-            // 사용자 정보가 없거나 비밀번호가 일치하지 않으면 예외를 발생시킵니다.
-            if (userDetails == null || !passwordEncoder.matches(userCustom.getPassword(), userDetails.getPassword())) {
+    public ResponseEntity<ApiResponse<String>> login(@RequestBody MemberCustom memberCustom) {
+        try {
+            //로그인 시도중인 사용자가 입력한 ID를 가져와서 사용자의 정보를 검색해봄
+            UserDetails userDetails = userDetailService.loadUserByUsername(memberCustom.getMemberId());
+
+            //만약 사용자가 존재하지 않거나
+            //passwordEncoder은 입력된 비밀번호를 암호화하여 DB에 있는 비밀번호와 비교하여 같은지 확인한다.
+            if (userDetails == null || !passwordEncoder.matches(memberCustom.getMemberPwd(), userDetails.getPassword())) {
                 throw new BadCredentialsException("아이디가 없거나 비밀번호가 일치하지 않습니다.");
             }
 
-            // 토큰을 생성합니다.
-            String token = JwtUtil.generateToken(userCustom);
+            //성공
+            //토큰 발급
+            String token = JwtUtil.generateToken(memberCustom);
 
-            // HTTP 헤더를 생성하고 토큰을 추가합니다.
+            //헤더만듬
             HttpHeaders httpHeaders = new HttpHeaders();
-            httpHeaders.set("Authorization", "Bearer" + token);
+            //토큰 머리에 딱 꼽음
+            httpHeaders.set("Authorization", "Bearer " + token);
 
-            // 출입증 객체
             Authentication authentication = new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
-
-            // 카카오톡 : 대화리스트화면[액티비티] + 상세친구대화톡방[액티비티]
-            // 출입관리부에 작성
             SecurityContextHolder.getContext().setAuthentication(authentication);
 
-            // 성공 응답을 생성합니다.
             ApiResponse<String> apiResponse = new ApiResponse<>(Status.SUCCESS, "로그인 성공", token);
             return ResponseEntity.ok().headers(httpHeaders).body(apiResponse);
 
         } catch (UsernameNotFoundException e) {
-            // 사용자를 찾을 수 없는 경우의 처리
-            System.out.println("그런 아이디 없음");
             ApiResponse<String> apiResponse = new ApiResponse<>(Status.FAIL, "로그인 실패: 아이디 없음", null);
             return ResponseEntity.ok(apiResponse);
         } catch (BadCredentialsException e) {
-            // 비밀번호가 일치하지 않는 경우의 처리
-            System.out.println("비밀번호 오류");
             ApiResponse<String> apiResponse = new ApiResponse<>(Status.FAIL, "로그인 실패: 비밀번호 오류", null);
             return ResponseEntity.ok(apiResponse);
         }

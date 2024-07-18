@@ -1,7 +1,7 @@
 package com.example.starbucks.token;
 
 
-import com.example.starbucks.model.UserCustom;
+import com.example.starbucks.model.MemberCustom;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
@@ -17,13 +17,13 @@ public class JwtUtil {
     private static final String SECRET_KEY ="asdfkjhasdliafnldsioahsigljasgsdfasdg";
     private static final SecretKey key = Keys.hmacShaKeyFor(SECRET_KEY.getBytes(StandardCharsets.UTF_8)); //문자열을 키타입으로 바꿔줌
 
-    public static String generateToken(UserCustom userCustom){
+    public static String generateToken(MemberCustom memberCustom){
         return Jwts
                 .builder()//키제작 만듬
                 .issuedAt(new Date(System.currentTimeMillis()))//발급시간
                 .expiration(new Date(System.currentTimeMillis() + 1000*5)) //기한시간
-                .subject(userCustom.getUserId())
-                .claim("userId",userCustom.getUserId())
+                .subject(memberCustom.getMemberId())
+                .claim("userId",memberCustom.getMemberId())
                 .signWith(key)
                 .compact();
     }

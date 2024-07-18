@@ -23,10 +23,8 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @EnableWebSecurity
 public class SecurityConfig {
 
-
     @Autowired
     private JWTFilter jwtFilter;
-
 
     // 패스워드 암호화해주는 함수
     // pw:qwer1234 -> pw:abc! (A사람)
