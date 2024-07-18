@@ -1,6 +1,7 @@
 package com.example.starbucks.controller;
 
 // 필요한 클래스들을 임포트합니다.
+
 import com.example.starbucks.dto.ApiResponse;
 import com.example.starbucks.model.UserCustom;
 import com.example.starbucks.service.UserDetailServiceImpl;
@@ -11,6 +12,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -60,11 +64,18 @@ public class UserController {
             }
 
             // 토큰을 생성합니다.
-            String token =  JwtUtil.generateToken(userCustom);
+            String token = JwtUtil.generateToken(userCustom);
 
             // HTTP 헤더를 생성하고 토큰을 추가합니다.
             HttpHeaders httpHeaders = new HttpHeaders();
-            httpHeaders.set("Authorization","Bearer"+token);
+            httpHeaders.set("Authorization", "Bearer" + token);
+
+            // 출입증 객체
+            Authentication authentication = new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+
+            // 카카오톡 : 대화리스트화면[액티비티] + 상세친구대화톡방[액티비티]
+            // 출입관리부에 작성
+            SecurityContextHolder.getContext().setAuthentication(authentication);
 
             // 성공 응답을 생성합니다.
             ApiResponse<String> apiResponse = new ApiResponse<>(Status.SUCCESS, "로그인 성공", token);
